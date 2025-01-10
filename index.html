@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7000 Vocabulary</title>
+    <!-- Link to Web App Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Noto+Serif+TC:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Material Symbols Icons (search and location_on) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Vertical Center */
+            align-items: center; /* Horizontal Center */
+            position: relative; /* For positioning overlay areas */
+            overflow: hidden; /* Prevent scrollbars */
+        }
+
+        /* Top-Left Button (Seed Input) */
+        #seedButton {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: none;
+            border: none;
+            color: gray;
+            font-size: 2em;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px;
+            z-index: 10; /* Ensure it's on top */
+        }
+
+        #seedButton:hover {
+            color: white;
+        }
+
+        /* Search Button positioned at top right */
+        #searchButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: gray;
+            font-size: 2em;
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 5px;
+            z-index: 10; /* Ensure it's on top */
+        }
+
+        #searchButton:hover {
+            color: white;
+        }
+
+        /* Display seed and current position at bottom center */
+        #seedDisplay {
+            position: absolute;
+            bottom: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            font-family: "DM Serif Text", serif;
+            border-radius: 5px;
+            padding: 5px 10px;
+            background-color: rgba(128, 128, 128, 0.8); /* Gray background */
+        }
+
+        /* Display word */
+        #word {
+            font-family: "DM Serif Text", serif;
+            font-weight: 700; /* Increased font weight */
+            font-size: 3em; /* Larger font size */
+            margin: 20px;
+            text-align: center;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: transparent; /* No gray background */
+        }
+
+        /* Display all translations */
+        #translations {
+            font-family: "Noto Serif TC", serif;
+            font-weight: 400;
+            font-size: 1.5em; /* Adjusted font size */
+            text-align: center;
+            margin: 10px;
+            white-space: pre-wrap; /* Preserve line breaks */
+            border-radius: 5px;
+            padding: 10px;
+            background-color: transparent; /* No gray background */
+        }
+
+        /* Clickable areas for navigation */
+        #leftClickArea, #rightClickArea {
+            flex-grow: 1;
+            width: 50%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            z-index: 1; /* Ensure these are below the buttons */
+        }
+
+        #leftClickArea {
+            left: 0;
+            cursor: pointer;
+        }
+
+        #rightClickArea {
+            right: 0;
+            cursor: pointer;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 20; /* Above all other elements */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 8px; /* Slight border-radius */
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            color: white;
+            font-family: "DM Serif Text", serif;
+        }
+
+        .modal-content input {
+            width: 80%;
+            padding: 10px;
+            margin: 15px 0;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .modal-content button {
+            padding: 10px 20px;
+            background-color: #555;
+            border: none;
+            border-radius: 4px; /* Slight border-radius */
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .modal-content button:hover {
+            background-color: #777;
+        }
+
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: white;
+            font-size: 2em;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 21; /* Above modal content */
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Seed Input Button (Top-Left) -->
+    <button id="seedButton" onclick="openSeedModal()">
+        <span class="material-symbols-outlined">location_on</span>
+    </button>
+
+    <!-- Search Button (Top-Right) -->
+    <button id="searchButton" onclick="openSearchModal()">
+        <span class="material-symbols-outlined">search</span>
+    </button>
+
+    <!-- Display Word -->
+    <div id="word">Loading...</div>
+
+    <!-- Display All Translations -->
+    <div id="translations">Loading...</div>
+
+    <!-- Display Seed and Current Position -->
+    <div id="seedDisplay">Location: Loading...</div>
+
+    <!-- Clickable Areas for Navigation -->
+    <div id="leftClickArea" onclick="prevWord()"></div>
+    <div id="rightClickArea" onclick="nextWord()"></div>
+
+    <!-- Search Modal -->
+    <div id="searchModal" class="modal">
+        <span class="close" onclick="closeSearchModal()">&times;</span>
+        <div class="modal-content">
+            <h2>Search Word</h2>
+            <input type="text" id="searchInput" placeholder="Enter word to search">
+            <br>
+            <button onclick="searchWord()">Search</button>
+        </div>
+    </div>
+
+    <!-- Seed Input Modal -->
+    <div id="seedModal" class="modal">
+        <span class="close" onclick="closeSeedModal()">&times;</span>
+        <div class="modal-content">
+            <h2>Enter Seed</h2>
+            <p>Format: seed-number</p>
+            <p>Example: 12248-22</p>
+            <input type="text" id="seedInput" placeholder="Enter seed">
+            <br>
+            <button onclick="submitSeed()">Confirm</button>
+            <button onclick="generateRandomSeed()">Generate Random Seed</button>
+        </div>
+    </div>
+
+    <script>
+        let words = [];
+        let randomizedIndices = [];
+        let currentWordIndex = 0;
+        let seedUsed = '';
+        let seedNumber = 0;
+        let totalWords = 0;
+
+        // Seeded random number generator
+        function seededRandom(seed) {
+            let s = seed;
+            return function () {
+                s = (s * 9301 + 49297) % 233280;
+                return s / 233280;
+            };
+        }
+
+        // Shuffle array based on seed
+        function shuffleArray(array, seed) {
+            const random = seededRandom(seed);
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Function to load the CSV file
+        async function loadCSV() {
+            try {
+                const response = await fetch('7000單.csv');
+                const csvText = await response.text();
+                words = parseCSV(csvText);
+                totalWords = words.length;
+                if (words.length > 0) {
+                    displayWord();
+                }
+            } catch (error) {
+                console.error("Error loading CSV:", error);
+                document.getElementById('word').textContent = "Error loading data!";
+                document.getElementById('translations').textContent = "";
+                document.getElementById('seedDisplay').textContent = "";
+            }
+        }
+
+        // Parse CSV
+        function parseCSV(csv) {
+            const rows = csv.split('\n').slice(1); // Skip header
+            return rows.map(row => {
+                const [word, translation] = row.split(',');
+                return { word: word?.trim() || '', translation: translation?.trim() || '' };
+            }).filter(entry => entry.word && entry.translation);
+        }
+
+        // Initialize the seed based on user input
+        function initializeSeed(seedStr) {
+            if (seedStr && /^(\d+)-(\d+)$/.test(seedStr)) {
+                const matches = seedStr.match(/^(\d+)-(\d+)$/);
+                if (matches) {
+                    seedNumber = parseInt(matches[1], 10);
+                    currentWordIndex = parseInt(matches[2], 10) - 1;
+                }
+            } else {
+                // Invalid format, generate random seed with -1
+                seedNumber = Math.floor(Math.random() * 100000);
+                currentWordIndex = 0;
+                seedStr = `${seedNumber}-1`;
+            }
+
+            seedUsed = seedStr;
+            randomizedIndices = shuffleArray([...Array(words.length).keys()], seedNumber);
+            if (currentWordIndex >= randomizedIndices.length) {
+                currentWordIndex = randomizedIndices.length - 1;
+            }
+            updateSeedDisplay();
+            displayWord();
+            closeSeedModal();
+        }
+
+        // Update seed display
+        function updateSeedDisplay() {
+            document.getElementById('seedDisplay').textContent = `Location: ${seedUsed}`;
+        }
+
+        // Display the current word and all its translations
+        function displayWord() {
+            if (randomizedIndices.length === 0) {
+                document.getElementById('word').textContent = "Loading...";
+                document.getElementById('translations').textContent = "";
+                return;
+            }
+
+            const wordDiv = document.getElementById('word');
+            const translationsDiv = document.getElementById('translations');
+
+            const currentWordObj = words[randomizedIndices[currentWordIndex]];
+            wordDiv.textContent = currentWordObj.word;
+
+            // Collect all translations for the current word
+            const allTranslations = words
+                .filter(entry => entry.word === currentWordObj.word)
+                .map(entry => entry.translation);
+
+            // Display all translations, each on a new line
+            translationsDiv.innerHTML = allTranslations.join('<br>');
+
+            // Update the seed display with current position
+            seedUsed = `${seedNumber}-${currentWordIndex + 1}`;
+            updateSeedDisplay();
+        }
+
+        // Move to the next word
+        function nextWord() {
+            if (currentWordIndex < randomizedIndices.length - 1) {
+                currentWordIndex++;
+                displayWord();
+            }
+        }
+
+        // Move to the previous word
+        function prevWord() {
+            if (currentWordIndex > 0) {
+                currentWordIndex--;
+                displayWord();
+            }
+        }
+
+        // Open Search Modal
+        function openSearchModal() {
+            document.getElementById('searchInput').value = "";
+            document.getElementById('searchModal').style.display = "flex";
+        }
+
+        // Close Search Modal
+        function closeSearchModal() {
+            document.getElementById('searchModal').style.display = "none";
+        }
+
+        // Search for a word and navigate to it
+        function searchWord() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            if (!searchTerm) {
+                alert("Please enter a word to search.");
+                return;
+            }
+
+            // Find all matching word indices
+            const foundIndices = words.reduce((acc, entry, index) => {
+                if (entry.word.toLowerCase() === searchTerm) {
+                    acc.push(index);
+                }
+                return acc;
+            }, []);
+
+            if (foundIndices.length > 0) {
+                // Find the first occurrence in the randomized list
+                const randomizedPosition = randomizedIndices.findIndex(idx => foundIndices.includes(idx));
+                if (randomizedPosition !== -1) {
+                    currentWordIndex = randomizedPosition;
+                    displayWord();
+                    closeSearchModal();
+                } else {
+                    alert("The searched word is not in the current list.");
+                }
+            } else {
+                alert("Word not found.");
+            }
+        }
+
+        // Submit Seed from Seed Modal
+        function submitSeed() {
+            const seedInput = document.getElementById('seedInput').value.trim();
+            if (seedInput && /^(\d+)-(\d+)$/.test(seedInput)) {
+                initializeSeed(seedInput);
+            } else {
+                alert("Please enter a valid seed in the format: number-number (e.g., 12248-22).");
+            }
+        }
+
+        // Generate random seed and initialize
+        function generateRandomSeed() {
+            const randomSeed = Math.floor(Math.random() * 100000);
+            const generatedSeed = `${randomSeed}-1`;
+            initializeSeed(generatedSeed);
+        }
+
+        // Open Seed Modal
+        function openSeedModal() {
+            document.getElementById('seedInput').value = "";
+            document.getElementById('seedModal').style.display = "flex";
+        }
+
+        // Close Seed Modal
+        function closeSeedModal() {
+            document.getElementById('seedModal').style.display = "none";
+        }
+
+        // Close modals when clicking outside of the modal content
+        window.onclick = function(event) {
+            const searchModal = document.getElementById('searchModal');
+            const seedModal = document.getElementById('seedModal');
+            if (event.target == searchModal) {
+                searchModal.style.display = "none";
+            }
+            if (event.target == seedModal) {
+                seedModal.style.display = "none";
+            }
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('service-worker.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+
+        // Load the CSV file when the page loads and open seed modal
+        window.onload = function() {
+            loadCSV().then(() => {
+                openSeedModal();
+            });
+        }
+    </script>
+</body>
+</html>
